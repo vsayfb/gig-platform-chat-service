@@ -6,12 +6,15 @@ import (
 )
 
 type Config struct {
-	AppEnv      string
-	Port        string
-	JWTSecret   string
-	MongoURI    string
-	MongoDB     string
+	AppEnv    string
+	Port      string
+	JWTSecret string
+
+	MongoURI string
+	MongoDB  string
+
 	AWSRegion   string
+	SQSEndpoint string
 	SQSQueueURL string
 }
 
@@ -23,6 +26,7 @@ func Load() *Config {
 		MongoURI:    mustGetEnv("MONGO_URI"),
 		MongoDB:     mustGetEnv("MONGO_DB"),
 		AWSRegion:   mustGetEnv("AWS_REGION"),
+		SQSEndpoint: os.Getenv("SQS_ENDPOINT"),
 		SQSQueueURL: mustGetEnv("SQS_QUEUE_URL"),
 	}
 }

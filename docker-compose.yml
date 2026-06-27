@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  chat-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      localstack:
+        condition: service_started
+    environment:
+      PORT: 8081
+
+      MONGODB_URI: mongodb://mongodb:27017
+      MONGODB_DATABASE: gig_platform_chat
+
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+
+      AWS_SQS_ENDPOINT: http://localstack:4566
+      AWS_SQS_QUEUE_URL: http://localstack:4566/000000000000/chat-events
+
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8
+    container_name: chat-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: sqs
+      DEBUG: 1
+      AWS_DEFAULT_REGION: us-east-1
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/localstack/init-sqs.sh:/etc/localstack/init/ready.d/init-sqs.sh
+
+volumes:
+  mongo-data:
+  localstack-data:

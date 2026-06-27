@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 
@@ -38,7 +39,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+	awsCfg, err := awsconfig.LoadDefaultConfig(
+		context.Background(),
 		awsconfig.WithRegion(cfg.AWSRegion),
 	)
 
@@ -47,7 +49,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	sqsClient := sqs.NewFromConfig(awsCfg)
+	sqsClient := sqs.NewFromConfig(awsCfg, func(o *sqs.Options) {
+		if cfg.SQSEndpoint != "" {
+			o.BaseEndpoint = aws.String(cfg.SQSEndpoint)
+		}
+	})
+
 	publisher := sqspkg.NewPublisher(sqsClient, cfg.SQSQueueURL)
 
 	threadRepo := thread.NewRepository(db)

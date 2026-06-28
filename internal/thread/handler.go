@@ -19,23 +19,70 @@ type Handler struct {
 	userClient *grpcclient.UserClient
 }
 
-func NewHandler(threadRepo *Repository, msgRepo *message.Repository,
-	userClient *grpcclient.UserClient,
-) *Handler {
+func NewHandler(threadRepo *Repository, msgRepo *message.Repository, userClient *grpcclient.UserClient) *Handler {
 	return &Handler{threadRepo: threadRepo, msgRepo: msgRepo, userClient: userClient}
 }
 
-// GET /threads
 func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.GetUserID(r.Context())
+	ctx := r.Context()
 
-	threads, err := h.threadRepo.FindByParticipant(r.Context(), userID)
+	userID := middleware.GetUserID(ctx)
+
+	threads, err := h.threadRepo.FindByParticipant(ctx, userID)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+		httputil.WriteError(
+			w,
+			http.StatusInternalServerError,
+			"failed to fetch threads",
+		)
 		return
 	}
 
-	httputil.WriteJSON(w, http.StatusOK, threads)
+	response := make([]*ThreadsResponse, 0, len(threads))
+
+	for _, t := range threads {
+
+		participantID := t.ParticipantA
+
+		if participantID == userID {
+			participantID = t.ParticipantB
+		}
+
+		user, err := h.userClient.GetUser(
+			ctx,
+			participantID,
+		)
+
+		if err != nil {
+			httputil.WriteError(
+				w,
+				http.StatusInternalServerError,
+				"failed to fetch participant during rpc call",
+			)
+			return
+		}
+
+		response = append(response, &ThreadsResponse{
+			ID: t.ID.Hex(),
+
+			Participant: &Participant{
+				ID:        user.Id,
+				Name:      user.Name,
+				AvatarURL: user.AvatarUrl,
+			},
+
+			LastMessage: t.LastMessage,
+
+			LastMessageAt: t.LastMessageAt,
+			CreatedAt:     t.CreatedAt,
+		})
+	}
+
+	httputil.WriteJSON(
+		w,
+		http.StatusOK,
+		response,
+	)
 }
 
 // GET /threads/{threadID}

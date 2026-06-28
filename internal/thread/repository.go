@@ -24,16 +24,18 @@ func NewRepository(db *mongo.Database) *Repository {
 
 // FindOrCreate returns the existing thread for the pair or creates one.
 // Thread key is always stored sorted so (A,B) == (B,A).
-func (r *Repository) FindOrCreate(ctx context.Context, userA, userB string) (*Thread, error) {
+func (r *Repository) FindOrCreate(ctx context.Context, userA, userB, message string) (*Thread, error) {
 	a, b := threadKey(userA, userB)
 
 	filter := bson.M{"participant_a": a, "participant_b": b}
 
 	now := time.Now()
+
 	update := bson.M{
 		"$setOnInsert": bson.M{
 			"participant_a":   a,
 			"participant_b":   b,
+			"last_message":    message,
 			"last_message_at": now,
 			"created_at":      now,
 		},
@@ -89,12 +91,22 @@ func (r *Repository) FindByParticipant(ctx context.Context, userID string) ([]*T
 }
 
 // UpdateLastMessageAt bumps the thread timestamp after a new message.
-func (r *Repository) UpdateLastMessageAt(ctx context.Context, threadID bson.ObjectID) error {
+func (r *Repository) UpdateLastMessage(
+	ctx context.Context,
+	threadID bson.ObjectID,
+	message string,
+) error {
 	_, err := r.col.UpdateOne(
 		ctx,
 		bson.M{"_id": threadID},
-		bson.M{"$set": bson.M{"last_message_at": time.Now()}},
+		bson.M{
+			"$set": bson.M{
+				"last_message":    message,
+				"last_message_at": time.Now(),
+			},
+		},
 	)
+
 	return err
 }
 

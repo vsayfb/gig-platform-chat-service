@@ -146,7 +146,7 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 	bgCtx := context.Background()
 
 	// 1. Lazy-create or fetch thread
-	t, err := h.threadRepo.FindOrCreate(bgCtx, senderID, targetID)
+	t, err := h.threadRepo.FindOrCreate(bgCtx, senderID, targetID, content)
 	if err != nil {
 		slog.Error("ws: findOrCreate thread failed", "err", err)
 		return
@@ -163,8 +163,8 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 		return
 	}
 
-	// 3. Update thread's last_message_at
-	_ = h.threadRepo.UpdateLastMessageAt(bgCtx, t.ID)
+	// 3. Update thread's last_message
+	_ = h.threadRepo.UpdateLastMessage(bgCtx, t.ID, content)
 
 	// 4. Build outgoing payload
 	outgoing := outgoingMessage{

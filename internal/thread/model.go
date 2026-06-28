@@ -12,6 +12,14 @@ type Participant struct {
 	AvatarURL string `json:"avatar_url"`
 }
 
+type ThreadsResponse struct {
+	ID            string       `json:"id"`
+	Participant   *Participant `json:"participant"`
+	LastMessage   string       `json:"last_message"`
+	LastMessageAt time.Time    `json:"last_message_at"`
+	CreatedAt     time.Time    `json:"created_at"`
+}
+
 type Thread struct {
 	ID            bson.ObjectID `bson:"_id,omitempty"     json:"id"`
 	ParticipantA  string        `bson:"participant_a"     json:"participant_a"`
@@ -35,13 +43,4 @@ func threadKey(userA, userB string) (a, b string) {
 		return userA, userB
 	}
 	return userB, userA
-}
-
-// an array of this
-type ThreadsResponse struct {
-	ID            string       `json:"id"`
-	Participant   *Participant `json:"participant"`
-	LastMessage   string       `json:"last_message"`
-	LastMessageAt time.Time    `json:"last_message_at"`
-	CreatedAt     time.Time    `json:"created_at"`
 }

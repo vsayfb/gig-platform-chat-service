@@ -31,6 +31,7 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(ctx)
 
 	threads, err := h.threadRepo.FindByParticipant(ctx, userID)
+
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
 		return
@@ -49,6 +50,7 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 
 	// batch gRPC call
 	usersResp, err := h.userClient.GetUsers(ctx, participantIDs)
+
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch users")
 		return
@@ -64,7 +66,7 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 
 	for _, t := range threads {
 		participantID := t.ParticipantA
-		
+
 		if participantID == userID {
 			participantID = t.ParticipantB
 		}

@@ -147,6 +147,7 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 
 	// 1. Lazy-create or fetch thread
 	t, err := h.threadRepo.FindOrCreate(bgCtx, senderID, targetID, content)
+
 	if err != nil {
 		slog.Error("ws: findOrCreate thread failed", "err", err)
 		return
@@ -157,7 +158,9 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 		ThreadID: t.ID,
 		SenderID: senderID,
 		Content:  content,
+		SentAt:   time.Now(),
 	}
+
 	if err := h.msgRepo.Insert(bgCtx, msg); err != nil {
 		slog.Error("ws: insert message failed", "err", err)
 		return

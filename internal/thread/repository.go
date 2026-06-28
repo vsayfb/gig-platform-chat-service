@@ -74,15 +74,16 @@ func (r *Repository) FindByParticipant(ctx context.Context, userID string) ([]*T
 		},
 	}
 
-	opts := options.Find().SetSort(bson.M{"last_message_at": -1})
+	cursor, err := r.col.Find(ctx, filter)
 
-	cursor, err := r.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
+
 	defer cursor.Close(ctx)
 
 	var threads []*Thread
+
 	if err := cursor.All(ctx, &threads); err != nil {
 		return nil, err
 	}

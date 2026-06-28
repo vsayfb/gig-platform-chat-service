@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/vsayfb/gig-platform-chat-service/internal/message"
+	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/httputil"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,10 +16,13 @@ import (
 type Handler struct {
 	threadRepo *Repository
 	msgRepo    *message.Repository
+	userClient *grpcclient.UserClient
 }
 
-func NewHandler(threadRepo *Repository, msgRepo *message.Repository) *Handler {
-	return &Handler{threadRepo: threadRepo, msgRepo: msgRepo}
+func NewHandler(threadRepo *Repository, msgRepo *message.Repository,
+	userClient *grpcclient.UserClient,
+) *Handler {
+	return &Handler{threadRepo: threadRepo, msgRepo: msgRepo, userClient: userClient}
 }
 
 // GET /threads

@@ -21,6 +21,7 @@ import (
 	"github.com/vsayfb/gig-platform-chat-service/internal/message"
 	"github.com/vsayfb/gig-platform-chat-service/internal/thread"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/database"
+	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/jwt"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/logger"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
@@ -57,6 +58,19 @@ func main() {
 
 	publisher := sqspkg.NewPublisher(sqsClient, cfg.SQSQueueURL)
 
+	conn, err := grpcclient.NewGRPCConnection(
+		cfg.UserServiceGRPCAddr,
+	)
+
+	if err != nil {
+		slog.Error("failed to connect user service", "err", err)
+		os.Exit(1)
+	}
+
+	defer conn.Close()
+
+	grpcUserClient := grpcclient.NewUserClient(conn)
+
 	threadRepo := thread.NewRepository(db)
 	msgRepo := message.NewRepository(db)
 
@@ -64,8 +78,8 @@ func main() {
 
 	jwtSvc := jwt.New(cfg.JWTSecret)
 
-	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, publisher)
-	restHandler := thread.NewHandler(threadRepo, msgRepo)
+	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, publisher, grpcUserClient)
+	restHandler := thread.NewHandler(threadRepo, msgRepo, grpcUserClient)
 
 	r := chi.NewRouter()
 	r.Use(cors.AllowAll().Handler)

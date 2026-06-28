@@ -11,6 +11,7 @@ import (
 
 	"github.com/vsayfb/gig-platform-chat-service/hub"
 	"github.com/vsayfb/gig-platform-chat-service/internal/message"
+	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/httputil"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/jwt"
 	sqspkg "github.com/vsayfb/gig-platform-chat-service/pkg/sqs"
@@ -43,6 +44,7 @@ type WSHandler struct {
 	threadRepo *Repository
 	msgRepo    *message.Repository
 	publisher  *sqspkg.Publisher
+	userClient *grpcclient.UserClient
 }
 
 func NewWSHandler(
@@ -51,6 +53,7 @@ func NewWSHandler(
 	threadRepo *Repository,
 	msgRepo *message.Repository,
 	publisher *sqspkg.Publisher,
+	userClient *grpcclient.UserClient,
 ) *WSHandler {
 	return &WSHandler{
 		hub:        h,
@@ -58,6 +61,7 @@ func NewWSHandler(
 		threadRepo: threadRepo,
 		msgRepo:    msgRepo,
 		publisher:  publisher,
+		userClient: userClient,
 	}
 }
 

@@ -16,18 +16,21 @@ type Config struct {
 	AWSRegion   string
 	SQSEndpoint string
 	SQSQueueURL string
+
+	UserServiceGRPCAddr string
 }
 
 func Load() *Config {
 	return &Config{
-		AppEnv:      mustGetEnv("APP_ENV"),
-		Port:        mustGetEnv("SERVER_PORT"),
-		JWTSecret:   mustGetEnv("JWT_SECRET"),
-		MongoURI:    mustGetEnv("MONGO_URI"),
-		MongoDB:     mustGetEnv("MONGO_DB"),
-		AWSRegion:   mustGetEnv("AWS_REGION"),
-		SQSEndpoint: os.Getenv("SQS_ENDPOINT"),
-		SQSQueueURL: mustGetEnv("SQS_QUEUE_URL"),
+		AppEnv:              mustGetEnv("APP_ENV"),
+		Port:                mustGetEnv("SERVER_PORT"),
+		JWTSecret:           mustGetEnv("JWT_SECRET"),
+		MongoURI:            mustGetEnv("MONGO_URI"),
+		MongoDB:             mustGetEnv("MONGO_DB"),
+		AWSRegion:           mustGetEnv("AWS_REGION"),
+		SQSEndpoint:         os.Getenv("SQS_ENDPOINT"),
+		SQSQueueURL:         mustGetEnv("SQS_QUEUE_URL"),
+		UserServiceGRPCAddr: mustGetEnv("USER_SERVICE_GRPC_ADDR"),
 	}
 }
 

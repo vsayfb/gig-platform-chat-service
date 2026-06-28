@@ -25,3 +25,11 @@ func (c *UserClient) GetUser(ctx context.Context, userID string) (*pb.GetUserRes
 		},
 	)
 }
+
+func (c *UserClient) GetUsers(ctx context.Context, userIDs []string) (*pb.GetUsersResponse, error) {
+	return c.client.GetUsers(
+		ctx, &pb.GetUsersRequest{
+			UserIds: userIDs,
+		},
+	)
+}

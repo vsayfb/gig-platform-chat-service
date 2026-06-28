@@ -52,6 +52,8 @@ github.com/klauspost/compress v1.17.6 h1:60eq2E/jlfwQXtvZEeBUYADs+BwKBWURIY+Gj2e
 github.com/klauspost/compress v1.17.6/go.mod h1:/dCuZOvVtNoHsyb+cuJD3itjs3NbnF6KH9zAO4BDxPM=
 github.com/vsayfb/gig-platform-protos v0.0.0-20260628000755-754626d7a22f h1:gFM/qnB+fZpcHi/XxnbI9V/kGP1fcm2PlfXi5jYeR8g=
 github.com/vsayfb/gig-platform-protos v0.0.0-20260628000755-754626d7a22f/go.mod h1:qOvCmaCQjsMoZLHSHkViqXkJC1/hGBusz2Aj0fhT6fg=
+github.com/vsayfb/gig-platform-protos v1.1.0 h1:dqSTAcJAUuSHqSr7fnUF7ajraX/DyEk4FQ/BlW/FM2I=
+github.com/vsayfb/gig-platform-protos v1.1.0/go.mod h1:qOvCmaCQjsMoZLHSHkViqXkJC1/hGBusz2Aj0fhT6fg=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.2.0 h1:bYKF2AEwG5rqd1BumT4gAnvwU/M9nBp2pTSxeZw7Wvs=

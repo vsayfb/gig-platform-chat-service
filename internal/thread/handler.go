@@ -10,6 +10,7 @@ import (
 	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/httputil"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
+	gig_platform_protos "github.com/vsayfb/gig-platform-protos/contracts"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -24,65 +25,73 @@ func NewHandler(threadRepo *Repository, msgRepo *message.Repository, userClient 
 }
 
 func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
+
 	ctx := r.Context()
 
 	userID := middleware.GetUserID(ctx)
 
 	threads, err := h.threadRepo.FindByParticipant(ctx, userID)
 	if err != nil {
-		httputil.WriteError(
-			w,
-			http.StatusInternalServerError,
-			"failed to fetch threads",
-		)
+		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
 		return
+	}
+
+	// collect participant IDs
+	participantIDs := make([]string, 0, len(threads))
+
+	for _, t := range threads {
+		if t.ParticipantA == userID {
+			participantIDs = append(participantIDs, t.ParticipantB)
+		} else {
+			participantIDs = append(participantIDs, t.ParticipantA)
+		}
+	}
+
+	// batch gRPC call
+	usersResp, err := h.userClient.GetUsers(ctx, participantIDs)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch users")
+		return
+	}
+
+	userMap := make(map[string]*gig_platform_protos.User)
+
+	for _, u := range usersResp.Users {
+		userMap[u.Id] = u
 	}
 
 	response := make([]*ThreadsResponse, 0, len(threads))
 
 	for _, t := range threads {
-
 		participantID := t.ParticipantA
-
+		
 		if participantID == userID {
 			participantID = t.ParticipantB
 		}
 
-		user, err := h.userClient.GetUser(
-			ctx,
-			participantID,
-		)
+		u := userMap[participantID]
 
-		if err != nil {
-			httputil.WriteError(
-				w,
-				http.StatusInternalServerError,
-				"failed to fetch participant during rpc call",
-			)
-			return
+		if u == nil {
+			continue // or handle missing user
 		}
 
 		response = append(response, &ThreadsResponse{
 			ID: t.ID.Hex(),
 
 			Participant: &Participant{
-				ID:        user.Id,
-				Name:      user.Name,
-				AvatarURL: user.AvatarUrl,
+				ID:        u.Id,
+				Name:      u.Name,
+				AvatarURL: u.AvatarUrl,
 			},
 
-			LastMessage: t.LastMessage,
-
+			LastMessage:   t.LastMessage,
 			LastMessageAt: t.LastMessageAt,
 			CreatedAt:     t.CreatedAt,
 		})
 	}
 
-	httputil.WriteJSON(
-		w,
-		http.StatusOK,
-		response,
-	)
+	httputil.WriteJSON(w, http.StatusOK, response)
+
 }
 
 // GET /threads/{threadID}

@@ -1,10 +1,16 @@
-.PHONY: run build tidy
+.PHONY: run down clean logs
 
 run:
-	go run ./cmd/api
+	@echo "Starting chat service environment..."
+	docker compose up --build
 
-build:
-	go build -o bin/chat-service ./cmd/api
+down:
+	@echo "Stopping chat service environment..."
+	docker compose down
 
-tidy:
-	go mod tidy
+clean:
+	@echo "Removing containers and volumes..."
+	docker compose down -v
+
+logs:
+	docker compose logs -f

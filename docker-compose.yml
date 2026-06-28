@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: chat-service
+    env_file:
+      - ./local.env
 
     ports:
       - "8081:8081"

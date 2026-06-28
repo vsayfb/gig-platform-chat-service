@@ -178,6 +178,7 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 	}
 
 	payload, err := json.Marshal(outgoing)
+
 	if err != nil {
 		slog.Error("ws: marshal outgoing failed", "err", err)
 		return

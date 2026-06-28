@@ -9,12 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 
 	"github.com/vsayfb/gig-platform-chat-service/config"
 	"github.com/vsayfb/gig-platform-chat-service/hub"
@@ -58,12 +57,10 @@ func main() {
 
 	publisher := sqspkg.NewPublisher(sqsClient, cfg.SQSQueueURL)
 
-	conn, err := grpcclient.NewGRPCConnection(
-		cfg.UserServiceGRPCAddr,
-	)
+	conn, err := grpcclient.NewGRPCConnection(cfg.UserServiceGRPCAddr)
 
 	if err != nil {
-		slog.Error("failed to connect user service", "err", err)
+		slog.Error("failed to create user service client", "err", err)
 		os.Exit(1)
 	}
 
@@ -78,10 +75,23 @@ func main() {
 
 	jwtSvc := jwt.New(cfg.JWTSecret)
 
-	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, publisher, grpcUserClient)
-	restHandler := thread.NewHandler(threadRepo, msgRepo, grpcUserClient)
+	wsHandler := thread.NewWSHandler(
+		h,
+		jwtSvc,
+		threadRepo,
+		msgRepo,
+		publisher,
+		grpcUserClient,
+	)
+
+	restHandler := thread.NewHandler(
+		threadRepo,
+		msgRepo,
+		grpcUserClient,
+	)
 
 	r := chi.NewRouter()
+
 	r.Use(cors.AllowAll().Handler)
 	r.Use(middleware.Logger)
 
@@ -105,7 +115,6 @@ func main() {
 			slog.Error("HTTP server failed", "err", err)
 			os.Exit(1)
 		}
-
 	}()
 
 	quit := make(chan os.Signal, 1)
@@ -117,7 +126,6 @@ func main() {
 	slog.Info("shutting down chat service")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-
 	defer cancel()
 
 	_ = srv.Shutdown(ctx)

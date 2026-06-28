@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,19 +26,16 @@ func NewHandler(threadRepo *Repository, msgRepo *message.Repository, userClient 
 }
 
 func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
-
 	ctx := r.Context()
 
 	userID := middleware.GetUserID(ctx)
 
 	threads, err := h.threadRepo.FindByParticipant(ctx, userID)
-
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
 		return
 	}
 
-	// collect participant IDs
 	participantIDs := make([]string, 0, len(threads))
 
 	for _, t := range threads {
@@ -48,11 +46,13 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// batch gRPC call
-	usersResp, err := h.userClient.GetUsers(ctx, participantIDs)
+	grpcCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
+	defer cancel()
+
+	usersResp, err := h.userClient.GetUsers(grpcCtx, participantIDs)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, "failed to fetch users")
+		httputil.WriteError(w, http.StatusServiceUnavailable, "failed to fetch users")
 		return
 	}
 
@@ -66,26 +66,22 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 
 	for _, t := range threads {
 		participantID := t.ParticipantA
-
 		if participantID == userID {
 			participantID = t.ParticipantB
 		}
 
 		u := userMap[participantID]
-
 		if u == nil {
-			continue // or handle missing user
+			continue
 		}
 
 		response = append(response, &ThreadsResponse{
 			ID: t.ID.Hex(),
-
 			Participant: &Participant{
 				ID:        u.Id,
 				Name:      u.Name,
 				AvatarURL: u.AvatarUrl,
 			},
-
 			LastMessage:   t.LastMessage,
 			LastMessageAt: t.LastMessageAt,
 			CreatedAt:     t.CreatedAt,
@@ -93,7 +89,6 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, response)
-
 }
 
 // GET /threads/{threadID}

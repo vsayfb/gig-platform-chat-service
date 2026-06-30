@@ -96,6 +96,8 @@ func main() {
 
 	metrics.Register()
 
+	metricsSrv := metrics.StartServer(cfg.MetricsServerPort)
+
 	r.Use(cors.AllowAll().Handler)
 	r.Use(chimiddleware.RequestID)
 	r.Use(middleware.Logger)
@@ -135,6 +137,7 @@ func main() {
 	defer cancel()
 
 	_ = srv.Shutdown(ctx)
+	_ = metricsSrv.Shutdown(ctx)
 
 	slog.Info("shutdown complete")
 }

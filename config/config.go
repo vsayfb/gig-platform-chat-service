@@ -18,6 +18,7 @@ type Config struct {
 	SQSQueueURL string
 
 	UserServiceGRPCAddr string
+	MetricsServerPort   string
 }
 
 func Load() *Config {
@@ -31,6 +32,7 @@ func Load() *Config {
 		SQSEndpoint:         os.Getenv("SQS_ENDPOINT"),
 		SQSQueueURL:         mustGetEnv("SQS_QUEUE_URL"),
 		UserServiceGRPCAddr: mustGetEnv("USER_SERVICE_GRPC_ADDR"),
+		MetricsServerPort:   mustGetEnv("METRICS_SERVER_PORT"),
 	}
 }
 

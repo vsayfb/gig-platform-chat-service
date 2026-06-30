@@ -13,6 +13,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
 	"github.com/vsayfb/gig-platform-chat-service/config"
@@ -23,6 +24,7 @@ import (
 	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/jwt"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/logger"
+	"github.com/vsayfb/gig-platform-chat-service/pkg/metrics"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
 	sqspkg "github.com/vsayfb/gig-platform-chat-service/pkg/sqs"
 )
@@ -92,8 +94,12 @@ func main() {
 
 	r := chi.NewRouter()
 
+	metrics.Register()
+
 	r.Use(cors.AllowAll().Handler)
+	r.Use(chimiddleware.RequestID)
 	r.Use(middleware.Logger)
+	r.Use(middleware.MetricsMiddleware)
 
 	r.Get("/ws", wsHandler.ServeWS)
 

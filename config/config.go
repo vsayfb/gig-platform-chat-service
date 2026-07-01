@@ -6,9 +6,10 @@ import (
 )
 
 type Config struct {
-	AppEnv    string
-	Port      string
-	JWTSecret string
+	ServiceName string
+	AppEnv      string
+	Port        string
+	JWTSecret   string
 
 	MongoURI string
 	MongoDB  string
@@ -19,10 +20,12 @@ type Config struct {
 
 	UserServiceGRPCAddr string
 	MetricsServerPort   string
+	OTelCollectorAddr   string
 }
 
 func Load() *Config {
 	return &Config{
+		ServiceName:         mustGetEnv("SERVICE_NAME"),
 		AppEnv:              mustGetEnv("APP_ENV"),
 		Port:                mustGetEnv("SERVER_PORT"),
 		JWTSecret:           mustGetEnv("JWT_SECRET"),
@@ -33,6 +36,7 @@ func Load() *Config {
 		SQSQueueURL:         mustGetEnv("SQS_QUEUE_URL"),
 		UserServiceGRPCAddr: mustGetEnv("USER_SERVICE_GRPC_ADDR"),
 		MetricsServerPort:   mustGetEnv("METRICS_SERVER_PORT"),
+		OTelCollectorAddr:   mustGetEnv("OTEL_COLLECTOR_ADDR"),
 	}
 }
 

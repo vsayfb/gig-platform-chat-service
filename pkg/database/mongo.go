@@ -1,29 +1,20 @@
 package database
 
 import (
-	"context"
-	"fmt"
-	"time"
-
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func NewMongoDB(uri, dbName string) (*mongo.Database, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+func NewMongoDB(uri string, dbName string) (*mongo.Client, *mongo.Database, error) {
+	client, err := mongo.Connect(
+		options.Client().ApplyURI(uri),
+	)
 
 	if err != nil {
-		return nil, fmt.Errorf("mongo: connect: %w", err)
+		return nil, nil, err
 	}
 
-	if err := client.Ping(ctx, nil); err != nil {
-		_ = client.Disconnect(context.Background())
+	db := client.Database(dbName)
 
-		return nil, fmt.Errorf("mongo: ping: %w", err)
-	}
-
-	return client.Database(dbName), nil
+	return client, db, nil
 }

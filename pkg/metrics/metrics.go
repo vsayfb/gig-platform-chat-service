@@ -5,7 +5,7 @@ import "github.com/prometheus/client_golang/prometheus"
 var (
 	HttpRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "core_http_requests_total",
+			Name: "chat_http_requests_total",
 			Help: "Total HTTP requests handled, by route, method and status.",
 		},
 		[]string{"route", "method", "status"},
@@ -13,7 +13,7 @@ var (
 
 	HttpRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "core_http_request_duration_seconds",
+			Name:    "chat_http_request_duration_seconds",
 			Help:    "HTTP request latency in seconds.",
 			Buckets: prometheus.DefBuckets,
 		},

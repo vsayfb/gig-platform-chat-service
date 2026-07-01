@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -28,15 +29,16 @@ func TracingMiddleware(next http.Handler) http.Handler {
 
 		defer span.End()
 
-		rw := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		// Use chi's WrapResponseWriter to prevent hijacking error
+		ww := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-		next.ServeHTTP(rw, r.WithContext(ctx))
+		next.ServeHTTP(ww, r.WithContext(ctx))
 
 		if pattern := chi.RouteContext(r.Context()).RoutePattern(); pattern != "" {
 			span.SetName(pattern)
 			span.SetAttributes(semconv.HTTPRoute(pattern))
 		}
 
-		span.SetAttributes(attribute.Int("http.status_code", rw.status))
+		span.SetAttributes(attribute.Int("http.status_code", ww.Status()))
 	})
 }

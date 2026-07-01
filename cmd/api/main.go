@@ -179,6 +179,7 @@ func main() {
 	}
 
 	shutdownTracer(shutdownCtx)
+	
 
 	slog.Info("shutdown complete")
 }

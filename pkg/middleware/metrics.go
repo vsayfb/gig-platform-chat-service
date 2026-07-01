@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/metrics"
 )
 
@@ -23,12 +24,10 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		rw := &statusRecorder{
-			ResponseWriter: w,
-			status:         http.StatusOK,
-		}
+		// Use chi's WrapResponseWriter to prevent hijacking error
+		ww := chimiddleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-		next.ServeHTTP(rw, r)
+		next.ServeHTTP(ww, r)
 
 		route := chi.RouteContext(r.Context()).RoutePattern()
 		if route == "" {
@@ -39,7 +38,7 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		status := strconv.Itoa(rw.status)
+		status := strconv.Itoa(ww.Status())
 		duration := time.Since(start).Seconds()
 
 		metrics.HttpRequestsTotal.

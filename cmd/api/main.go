@@ -24,9 +24,9 @@ import (
 	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/jwt"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/logger"
-	"github.com/vsayfb/gig-platform-chat-service/pkg/metrics"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
 	sqspkg "github.com/vsayfb/gig-platform-chat-service/pkg/sqs"
+	"github.com/vsayfb/gig-platform-chat-service/pkg/telemetry"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/tracing"
 )
 
@@ -58,7 +58,6 @@ func main() {
 	publisher := sqspkg.NewPublisher(sqsClient, cfg.SQSQueueURL)
 
 	conn, err := grpcclient.NewGRPCConnection(cfg.UserServiceGRPCAddr)
-
 	if err != nil {
 		slog.Error("failed to create user service client", "err", err)
 		os.Exit(1)
@@ -74,22 +73,19 @@ func main() {
 	jwtSvc := jwt.New(cfg.JWTSecret)
 
 	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, publisher, grpcUserClient)
+
 	restHandler := thread.NewHandler(threadRepo, msgRepo, grpcUserClient)
 
-	tracingCtx := context.Background()
+	ctx := context.Background()
 
-	shutdownTracer, err := tracing.InitTracer(tracingCtx, cfg.ServiceName, cfg.OTelCollectorAddr)
+	shutdownTelemetry, err := telemetry.Init(ctx, cfg.ServiceName, cfg.OTelCollectorAddr)
 
 	if err != nil {
-		slog.Error("failed to init tracer", "error", err)
+		slog.Error("failed to initialize telemetry", "err", err)
 		os.Exit(1)
 	}
 
 	slog.SetDefault(slog.New(tracing.NewOTelHandler(logHandler)))
-
-	metrics.Register()
-
-	metricsSrv := metrics.StartServer(cfg.MetricsServerPort)
 
 	r := chi.NewRouter()
 
@@ -115,70 +111,51 @@ func main() {
 	serverErr := make(chan error, 1)
 
 	go func() {
-		slog.Info(
-			"Chat Service listening",
-			"port",
-			cfg.Port,
-		)
+		slog.Info("Chat Service listening", "port", cfg.Port)
 
 		serverErr <- srv.ListenAndServe()
 	}()
 
 	quit := make(chan os.Signal, 1)
 
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(
+		quit,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
 
 	select {
 	case err := <-serverErr:
 		if err != nil && err != http.ErrServerClosed {
-			slog.Error(
-				"HTTP server failed",
-				"err",
-				err,
-			)
+			slog.Error("HTTP server failed", "err", err)
 		}
 
 	case <-quit:
 		slog.Info("shutting down chat service")
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
 
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		slog.Error(
-			"failed to shutdown HTTP server",
-			"err",
-			err,
-		)
-	}
-
-	if err := metricsSrv.Shutdown(shutdownCtx); err != nil {
-		slog.Error(
-			"failed to shutdown metrics server",
-			"err",
-			err,
-		)
+		slog.Error("failed to shutdown HTTP server", "err", err)
 	}
 
 	if err := conn.Close(); err != nil {
-		slog.Error(
-			"failed to close grpc connection",
-			"err",
-			err,
-		)
+		slog.Error("failed to close gRPC connection", "err", err)
 	}
 
 	if err := mongoClient.Disconnect(shutdownCtx); err != nil {
-		slog.Error(
-			"failed to disconnect MongoDB",
-			"err",
-			err,
-		)
+		slog.Error("failed to disconnect MongoDB", "err", err)
 	}
 
-	shutdownTracer(shutdownCtx)
+	if err := shutdownTelemetry(shutdownCtx); err != nil {
+		slog.Error("failed to shutdown telemetry", "err", err)
+	}
 
 	slog.Info("shutdown complete")
 }

@@ -33,7 +33,7 @@ import (
 func main() {
 	cfg := config.Load()
 
-	logger.Init(cfg.AppEnv)
+	logHandler := logger.Init(cfg.AppEnv)
 
 	mongoClient, db, err := database.NewMongoDB(cfg.MongoURI, cfg.MongoDB)
 
@@ -85,11 +85,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	slog.SetDefault(slog.New(tracing.NewOTelHandler(logHandler)))
+
 	metrics.Register()
 
-	metricsSrv := metrics.StartServer(
-		cfg.MetricsServerPort,
-	)
+	metricsSrv := metrics.StartServer(cfg.MetricsServerPort)
 
 	r := chi.NewRouter()
 
@@ -179,7 +179,6 @@ func main() {
 	}
 
 	shutdownTracer(shutdownCtx)
-	
 
 	slog.Info("shutdown complete")
 }

@@ -96,7 +96,7 @@ func (h *WSHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// 3. Upgrade connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		slog.Error("ws: upgrade failed", "err", err)
+		slog.ErrorContext(r.Context(), "ws: upgrade failed", "err", err)
 		return
 	}
 
@@ -108,12 +108,12 @@ func (h *WSHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 	}
 	h.hub.Register(client)
 
-	slog.Info("ws: client connected", "userID", senderID, "targetID", targetID)
+	slog.InfoContext(r.Context(), "ws: client connected", "userID", senderID, "targetID", targetID)
 
 	defer func() {
 		h.hub.Unregister(senderID)
 		conn.Close()
-		slog.Info("ws: client disconnected", "userID", senderID)
+		slog.InfoContext(r.Context(), "ws: client disconnected", "userID", senderID)
 	}()
 
 	// 5. Read loop
@@ -121,14 +121,14 @@ func (h *WSHandler) ServeWS(w http.ResponseWriter, r *http.Request) {
 		_, raw, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				slog.Error("ws: read error", "userID", senderID, "err", err)
+				slog.ErrorContext(r.Context(), "ws: read error", "userID", senderID, "err", err)
 			}
 			break
 		}
 
 		var incoming incomingMessage
 		if err := json.Unmarshal(raw, &incoming); err != nil {
-			slog.Warn("ws: invalid message format", "userID", senderID)
+			slog.WarnContext(r.Context(), "ws: invalid message format", "userID", senderID)
 			continue
 		}
 
@@ -149,7 +149,7 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 	t, err := h.threadRepo.FindOrCreate(bgCtx, senderID, targetID, content)
 
 	if err != nil {
-		slog.Error("ws: findOrCreate thread failed", "err", err)
+		slog.ErrorContext(bgCtx, "ws: findOrCreate thread failed", "err", err)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 	}
 
 	if err := h.msgRepo.Insert(bgCtx, msg); err != nil {
-		slog.Error("ws: insert message failed", "err", err)
+		slog.ErrorContext(bgCtx, "ws: insert message failed", "err", err)
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 	payload, err := json.Marshal(outgoing)
 
 	if err != nil {
-		slog.Error("ws: marshal outgoing failed", "err", err)
+		slog.ErrorContext(bgCtx, "ws: marshal outgoing failed", "err", err)
 		return
 	}
 
@@ -193,8 +193,9 @@ func (h *WSHandler) handleMessage(senderID, targetID, content string) {
 			Content:    content,
 			SentAt:     msg.SentAt.Format(time.RFC3339),
 		})
+
 		if err != nil {
-			slog.Error("ws: sqs publish failed", "err", err)
+			slog.ErrorContext(bgCtx, "ws: sqs publish failed", "err", err)
 		}
 	}
 }

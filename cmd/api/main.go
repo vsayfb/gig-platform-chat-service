@@ -24,6 +24,7 @@ import (
 	"github.com/vsayfb/gig-platform-chat-service/pkg/grpcclient"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/jwt"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/logger"
+	"github.com/vsayfb/gig-platform-chat-service/pkg/metrics"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
 	sqspkg "github.com/vsayfb/gig-platform-chat-service/pkg/sqs"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/telemetry"
@@ -82,6 +83,11 @@ func main() {
 
 	if err != nil {
 		slog.Error("failed to initialize telemetry", "err", err)
+		os.Exit(1)
+	}
+
+	if err := metrics.Register(); err != nil {
+		slog.Error("failed to register metrics", "err", err)
 		os.Exit(1)
 	}
 

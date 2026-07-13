@@ -78,6 +78,7 @@ func main() {
 
 	r.Use(cors.AllowAll().Handler)
 	r.Use(chimiddleware.RequestID)
+	r.Use(chimiddleware.Heartbeat("/health"))
 	r.Use(middleware.Logger)
 	r.Use(middleware.MetricsMiddleware)
 	r.Use(middleware.TracingMiddleware)

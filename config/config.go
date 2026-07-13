@@ -22,7 +22,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		ServiceName:         mustGetEnv("SERVICE_NAME"),
+		ServiceName:         getEnv("SERVICE_NAME", "chat-service"),
 		AppEnv:              getEnv("APP_ENV", "production"),
 		Port:                getEnv("REST_PORT", "8081"),
 		GRPCPort:            getEnv("GRPC_PORT", "9090"),

@@ -9,9 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -26,7 +23,6 @@ import (
 	"github.com/vsayfb/gig-platform-chat-service/pkg/logger"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/metrics"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/middleware"
-	sqspkg "github.com/vsayfb/gig-platform-chat-service/pkg/sqs"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/telemetry"
 	"github.com/vsayfb/gig-platform-chat-service/pkg/tracing"
 )
@@ -43,21 +39,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(), awsconfig.WithRegion(cfg.AWSRegion))
-
-	if err != nil {
-		slog.Error("failed to load AWS config", "err", err)
-		os.Exit(1)
-	}
-
-	sqsClient := sqs.NewFromConfig(awsCfg, func(o *sqs.Options) {
-		if cfg.SQSEndpoint != "" {
-			o.BaseEndpoint = aws.String(cfg.SQSEndpoint)
-		}
-	})
-
-	publisher := sqspkg.NewPublisher(sqsClient, cfg.SQSQueueURL)
-
 	conn, err := grpcclient.NewGRPCConnection(cfg.UserServiceGRPCAddr)
 	if err != nil {
 		slog.Error("failed to create user service client", "err", err)
@@ -73,7 +54,7 @@ func main() {
 
 	jwtSvc := jwt.New(cfg.JWTSecret)
 
-	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, publisher, grpcUserClient)
+	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, grpcUserClient)
 
 	restHandler := thread.NewHandler(threadRepo, msgRepo, grpcUserClient)
 

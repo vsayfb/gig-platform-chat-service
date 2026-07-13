@@ -52,7 +52,6 @@ func NewWSHandler(
 	jwtSvc *jwt.Service,
 	threadRepo *Repository,
 	msgRepo *message.Repository,
-	publisher *sqspkg.Publisher,
 	userClient *grpcclient.UserClient,
 ) *WSHandler {
 	return &WSHandler{
@@ -60,7 +59,6 @@ func NewWSHandler(
 		jwtSvc:     jwtSvc,
 		threadRepo: threadRepo,
 		msgRepo:    msgRepo,
-		publisher:  publisher,
 		userClient: userClient,
 	}
 }

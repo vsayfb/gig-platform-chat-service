@@ -76,10 +76,11 @@ func main() {
 
 	r := chi.NewRouter()
 
+	r.Use(chimiddleware.Heartbeat("/health"))
+
 	r.Route("/chat", func(r chi.Router) {
 		r.Use(cors.AllowAll().Handler)
 		r.Use(chimiddleware.RequestID)
-		r.Use(chimiddleware.Heartbeat("/health"))
 		r.Use(middleware.Logger)
 		r.Use(middleware.MetricsMiddleware)
 		r.Use(middleware.TracingMiddleware)

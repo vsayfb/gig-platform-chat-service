@@ -76,20 +76,22 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(cors.AllowAll().Handler)
-	r.Use(chimiddleware.RequestID)
-	r.Use(chimiddleware.Heartbeat("/health"))
-	r.Use(middleware.Logger)
-	r.Use(middleware.MetricsMiddleware)
-	r.Use(middleware.TracingMiddleware)
+	r.Route("/chat", func(r chi.Router) {
+		r.Use(cors.AllowAll().Handler)
+		r.Use(chimiddleware.RequestID)
+		r.Use(chimiddleware.Heartbeat("/health"))
+		r.Use(middleware.Logger)
+		r.Use(middleware.MetricsMiddleware)
+		r.Use(middleware.TracingMiddleware)
 
-	r.Get("/ws", wsHandler.ServeWS)
+		r.Get("/ws", wsHandler.ServeWS)
 
-	authMiddleware := middleware.Auth(jwtSvc)
+		authMiddleware := middleware.Auth(jwtSvc)
 
-	r.With(authMiddleware).Get("/threads", restHandler.ListThreads)
-	r.With(authMiddleware).Get("/threads/{threadID}", restHandler.GetThread)
-	r.With(authMiddleware).Get("/threads/{threadID}/messages", restHandler.ListMessages)
+		r.With(authMiddleware).Get("/threads", restHandler.ListThreads)
+		r.With(authMiddleware).Get("/threads/{threadID}", restHandler.GetThread)
+		r.With(authMiddleware).Get("/threads/{threadID}/messages", restHandler.ListMessages)
+	})
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,

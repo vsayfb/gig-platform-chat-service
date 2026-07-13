@@ -9,6 +9,7 @@ type Config struct {
 	ServiceName string
 	AppEnv      string
 	Port        string
+	GRPCPort    string
 	JWTSecret   string
 
 	MongoURI string
@@ -26,8 +27,9 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		ServiceName:         mustGetEnv("SERVICE_NAME"),
-		AppEnv:              mustGetEnv("APP_ENV"),
-		Port:                mustGetEnv("SERVER_PORT"),
+		AppEnv:              getEnv("APP_ENV", "production"),
+		Port:                getEnv("REST_PORT", "8080"),
+		GRPCPort:            getEnv("GRPC_PORT", "9090"),
 		JWTSecret:           mustGetEnv("JWT_SECRET"),
 		MongoURI:            mustGetEnv("MONGO_URI"),
 		MongoDB:             mustGetEnv("MONGO_DB"),
@@ -35,8 +37,8 @@ func Load() *Config {
 		SQSEndpoint:         os.Getenv("SQS_ENDPOINT"),
 		SQSQueueURL:         mustGetEnv("SQS_QUEUE_URL"),
 		UserServiceGRPCAddr: mustGetEnv("USER_SERVICE_GRPC_ADDR"),
-		MetricsServerPort:   mustGetEnv("METRICS_SERVER_PORT"),
-		OTelCollectorAddr:   mustGetEnv("OTEL_COLLECTOR_ADDR"),
+		MetricsServerPort:   getEnv("METRICS_SERVER_PORT", ":9100"),
+		OTelCollectorAddr:   getEnv("OTEL_COLLECTOR_ADDR", "localhost:4317"),
 	}
 }
 
@@ -46,4 +48,11 @@ func mustGetEnv(key string) string {
 		log.Fatalf("missing required env var: %s", key)
 	}
 	return v
+}
+
+func getEnv(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }

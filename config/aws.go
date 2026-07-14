@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -49,7 +50,7 @@ func loadAWS(ctx context.Context) (*Config, error) {
 
 	return &Config{
 		ServiceName:         getOrDefault(params, "service-name", "chat-service"),
-		AppEnv:              "production",
+		AppEnv:              getOrDefault(params, "env", "production"),
 		Port:                getOrDefault(params, "server-port", "8081"),
 		GRPCPort:            getOrDefault(params, "grpc-port", "9090"),
 		JWTSecret:           jwt.Secret,
@@ -104,8 +105,15 @@ func loadSecret(ctx context.Context, client *secretsmanager.Client, arn string, 
 }
 
 func getOrDefault(values map[string]string, key, def string) string {
-	if v, ok := values[key]; ok {
+	envKey := strings.ToUpper(strings.ReplaceAll(key, "-", "_"))
+
+	if v := os.Getenv(envKey); v != "" {
 		return v
 	}
+
+	if v, ok := values[key]; ok && v != "" {
+		return v
+	}
+
 	return def
 }

@@ -1,7 +1,8 @@
 package config
 
 import (
-	"log"
+	"context"
+	"fmt"
 	"os"
 )
 
@@ -20,25 +21,18 @@ type Config struct {
 	OTelCollectorAddr   string
 }
 
-func Load() *Config {
-	return &Config{
-		ServiceName:         getEnv("SERVICE_NAME", "chat-service"),
-		AppEnv:              getEnv("APP_ENV", "production"),
-		Port:                getEnv("REST_PORT", "8081"),
-		GRPCPort:            getEnv("GRPC_PORT", "9090"),
-		JWTSecret:           mustGetEnv("JWT_SECRET"),
-		MongoURI:            mustGetEnv("MONGO_URI"),
-		MongoDB:             mustGetEnv("MONGO_DB"),
-		UserServiceGRPCAddr: getEnv("USER_SERVICE_GRPC_ADDR", "localhost:8080"),
-		MetricsServerPort:   getEnv("METRICS_SERVER_PORT", ":9100"),
-		OTelCollectorAddr:   getEnv("OTEL_COLLECTOR_ADDR", "localhost:4317"),
+func Load(ctx context.Context) (*Config, error) {
+	if getEnv("APP_ENV", "development") == "production" {
+		return loadAWS(ctx)
 	}
+
+	return loadEnv()
 }
 
 func mustGetEnv(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		log.Fatalf("missing required env var: %s", key)
+		panic(fmt.Sprintf("missing required env var: %s", key))
 	}
 	return v
 }

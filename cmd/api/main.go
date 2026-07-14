@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -28,7 +29,13 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	ctx := context.Background()
+
+	cfg, err := config.Load(ctx)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	logHandler := logger.Init(cfg.AppEnv)
 
@@ -57,8 +64,6 @@ func main() {
 	wsHandler := thread.NewWSHandler(h, jwtSvc, threadRepo, msgRepo, grpcUserClient)
 
 	restHandler := thread.NewHandler(threadRepo, msgRepo, grpcUserClient)
-
-	ctx := context.Background()
 
 	shutdownTelemetry, err := telemetry.Init(ctx, cfg.ServiceName, cfg.OTelCollectorAddr)
 

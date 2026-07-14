@@ -26,6 +26,7 @@ const parameterPath = "/gerek/app"
 func loadAWS(ctx context.Context) (*Config, error) {
 
 	awsCfg, err := awscfg.LoadDefaultConfig(ctx)
+	
 	if err != nil {
 		return nil, fmt.Errorf("load aws config: %w", err)
 	}
@@ -34,16 +35,19 @@ func loadAWS(ctx context.Context) (*Config, error) {
 	secretsClient := secretsmanager.NewFromConfig(awsCfg)
 
 	params, err := loadParameters(ctx, ssmClient)
+
 	if err != nil {
 		return nil, err
 	}
 
 	var jwt jwtSecret
+
 	if err := loadSecret(ctx, secretsClient, params["jwt-secret-arn"], &jwt); err != nil {
 		return nil, err
 	}
 
 	var mongo mongoSecret
+
 	if err := loadSecret(ctx, secretsClient, params["mongo-uri-secret-arn"], &mongo); err != nil {
 		return nil, err
 	}
@@ -63,31 +67,27 @@ func loadAWS(ctx context.Context) (*Config, error) {
 }
 
 func loadParameters(ctx context.Context, client *ssm.Client) (map[string]string, error) {
+	names := []string{
+		parameter("jwt-secret-arn"),
+		parameter("mongo-uri-secret-arn"),
+		parameter("mongo-db-name"),
+		parameter("sqs-notification-events-queue-url"),
+	}
+
+	out, err := client.GetParameters(ctx, &ssm.GetParametersInput{
+		Names:          names,
+		WithDecryption: aws.Bool(true),
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("read parameter store: %w", err)
+	}
+
 	params := make(map[string]string)
 
-	var nextToken *string
-
-	for {
-		out, err := client.GetParametersByPath(ctx, &ssm.GetParametersByPathInput{
-			Path:           aws.String(parameterPath),
-			Recursive:      aws.Bool(true),
-			WithDecryption: aws.Bool(true),
-			NextToken:      nextToken,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, p := range out.Parameters {
-			name := strings.TrimPrefix(aws.ToString(p.Name), parameterPath+"/")
-			params[name] = aws.ToString(p.Value)
-		}
-
-		if out.NextToken == nil {
-			break
-		}
-
-		nextToken = out.NextToken
+	for _, p := range out.Parameters {
+		key := strings.TrimPrefix(aws.ToString(p.Name), parameterPath+"/")
+		params[key] = aws.ToString(p.Value)
 	}
 
 	return params, nil
@@ -116,4 +116,8 @@ func getOrDefault(values map[string]string, key, def string) string {
 	}
 
 	return def
+}
+
+func parameter(name string) string {
+	return parameterPath + "/" + name
 }

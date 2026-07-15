@@ -22,7 +22,9 @@ type Config struct {
 }
 
 func Load(ctx context.Context) (*Config, error) {
-	if getEnv("APP_ENV", "development") == "production" {
+	env := getEnv(AppEnv, EnvironmentDevelopment)
+
+	if env == EnvironmentProduction {
 		return loadAWS(ctx)
 	}
 
